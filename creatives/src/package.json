@@ -1,0 +1,14 @@
+{
+  "name": "arabiva-ad-creatives",
+  "private": true,
+  "description": "Builds the Arabiva image and video ads from the store's own product photos plus text layers.",
+  "scripts": {
+    "setup": "mkdir -p fonts out && cp node_modules/@fontsource/alexandria/files/alexandria-arabic-*-normal.woff2 node_modules/@fontsource/alexandria/files/alexandria-latin-*-normal.woff2 fonts/",
+    "images": "node ads.js",
+    "video": "node video.js v && node video.js h"
+  },
+  "dependencies": {
+    "@fontsource/alexandria": "^5.3.0",
+    "playwright": "*"
+  }
+}

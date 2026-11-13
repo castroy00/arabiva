@@ -1,0 +1,6 @@
+node_modules/
+creatives/src/fonts/
+creatives/src/out/
+creatives/src/_*
+__pycache__/
+.DS_Store
