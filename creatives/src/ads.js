@@ -20,7 +20,7 @@ const CONCEPTS = {
   spray: { kind: 'scene', img: 'img/arch.webp', fmt: SQUARE_SCENE,
     ar: { eyebrow: 'بخاخ العطر', h: 'بخاخ 50 مل<br>من <b>6 د.ك</b>', sub: 'وعيّنة 2 مل من 1 د.ك: جرّب الرائحة أولاً، ثم اطلب حجمك.', chips: KW.ar.chips },
     en: { eyebrow: 'Perfume spray', h: '50 ml spray<br>from <b>KWD 6</b>', sub: '2 ml samples from KWD 1. Try the scent first, then pick your size.', chips: KW.en.chips } },
-  oil: { kind: 'ladder', bg: '#fefefe', fmt: { sq: { layout: 'stack', track: 560 }, land: { layout: 'side', track: 640 }, port: { layout: 'stack', track: 600 }, story: { layout: 'stack', track: 960 } },
+  oil: { kind: 'ladder', bg: '#fefefe', fmt: { sq: { layout: 'stack', track: 600 }, land: { layout: 'side', track: 690 }, port: { layout: 'stack', track: 600 }, story: { layout: 'stack', track: 960 } },
     ladder: [['img/c-50g.webp', 0.50, '50 غ', '50 g'], ['img/c-100g.webp', 0.60, '100 غ', '100 g'], ['img/c-250g.webp', 0.72, '250 غ', '250 g'], ['img/c-500g.webp', 0.86, '500 غ', '500 g'], ['img/c-1kg.webp', 1.0, '1 كغ', '1 kg']],
     ar: { eyebrow: 'زيوت عطرية مركّزة', h: '50 غرام<br>من <b>2 د.ك</b>', sub: 'أحجام من 50 غرام إلى 1 كيلو. مخلوطة ومعبأة في مختبرنا بالكويت.', chips: KW.ar.chips_oil },
     en: { eyebrow: 'Concentrated perfume oils', h: '50 g<br>from <b>KWD 2</b>', sub: 'Sizes from 50 g to 1 kg. Blended and bottled in our Kuwait lab.', chips: KW.en.chips_oil } },
@@ -56,13 +56,12 @@ html,body{background:#14110f}
 .photo.white img.full{object-fit:contain;padding:calc(var(--u)*3)}
 .photo.scene img.full{object-fit:cover}
 .photo.scene.contain img.full{object-fit:contain}
-.ladder{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:calc(var(--u)*1.2);padding:calc(var(--u)*5) calc(var(--u)*3) calc(var(--u)*8)}
-.ladder figure{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;flex:1 1 0;min-width:0;direction:ltr}
-.ladder img{display:block;width:auto;max-width:100%}
-.ladder figcaption{position:absolute;bottom:calc(var(--u)*2.6);font-weight:500;font-size:calc(var(--u)*2.5);color:#14110f;letter-spacing:.01em}
-.ladder figure{position:relative}
-.ladder figure figcaption{position:static;margin-top:calc(var(--u)*1.2)}
-.ad.rtl .ladder figcaption{direction:rtl}
+/* Size ladder: every bottle keeps the exact proportions of its photo. Height is set from one shared scale (--lh), width is always auto. */
+.ladder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:calc(var(--pu)*4) calc(var(--pu)*3)}
+.ladder .row{display:flex;align-items:flex-end;justify-content:center;gap:calc(var(--pu)*.4)}
+.ladder figure{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;margin:0}
+.ladder img{display:block;height:calc(var(--lh)*var(--k));width:auto;max-width:none;flex:0 0 auto}
+.ladder figcaption{margin-top:calc(var(--pu)*1.1);font-weight:500;font-size:calc(var(--pu)*2.5);color:#14110f;letter-spacing:.01em;white-space:nowrap}
 .copy{position:relative;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--u)*2.6);padding:calc(var(--u)*6) calc(var(--u)*6);min-width:0;min-height:0}
 .ad.rtl .copy{direction:rtl;text-align:right}
 .ad.ltr .copy{direction:ltr;text-align:left}
@@ -98,8 +97,8 @@ function adHTML(cKey, lang, sKey) {
   const img = f.img || c.img;
   let photo;
   if (c.kind === 'ladder') {
-    const figs = c.ladder.map(([src, k, ar, en]) => `<figure><img src="${F(src)}" style="height:${(k * 84).toFixed(1)}%"><figcaption>${lang === 'ar' ? ar : en}</figcaption></figure>`).join('');
-    photo = `<div class="photo white" style="background:${c.bg}"><div class="ladder">${figs}</div></div>`;
+    const figs = c.ladder.map(([src, k, ar, en]) => `<figure><img src="${F(src)}" style="--k:${k}"><figcaption>${lang === 'ar' ? ar : en}</figcaption></figure>`).join('');
+    photo = `<div class="photo white" style="background:${c.bg}"><div class="ladder"><div class="row">${figs}</div></div></div>`;
   } else if (c.kind === 'white') {
     photo = `<div class="photo white" style="background:${c.bg}"><img class="full" src="${F(img)}"></div>`;
   } else {
@@ -112,7 +111,7 @@ function adHTML(cKey, lang, sKey) {
   const body = f.layout === 'grid'
     ? `${photo}<div class="copy top"><span class="rule"></span>${top}</div><div class="copy bottom"><span class="rule"></span>${bottom}</div>`
     : `${photo}<div class="copy"><span class="rule"></span>${top}${bottom}</div>`;
-  return `<div class="ad ${f.layout} ${lang === 'ar' ? 'rtl' : 'ltr'}" style="width:${s.w}px;height:${s.h}px;--u:${u}px;--photo:${f.track}px;--hs:${hs}">${body}</div>`;
+  return `<div class="ad ${f.layout} ${lang === 'ar' ? 'rtl' : 'ltr'}" style="width:${s.w}px;height:${s.h}px;--u:${u}px;--pu:${u}px;--photo:${f.track}px;--hs:${hs}">${body}</div>`;
 }
 
 const JOBS = [];
@@ -132,6 +131,26 @@ for (const c of ['tola', 'spray', 'travel']) JOBS.push([c, 'ar', 'story']);
     fs.writeFileSync(tmp, `<!doctype html><html lang="${lang}"><meta charset="utf-8"><style>${css}</style><body>${adHTML(c, lang, s)}</body></html>`);
     await page.goto('file://' + tmp);
     await page.evaluate(() => document.fonts.ready);
+    await page.evaluate(() => Promise.all([...document.images].map((im) => im.decode().catch(() => {}))));
+    // size ladder: one shared scale, as large as fits the panel; then prove no photo was stretched
+    const aspect = await page.evaluate(() => {
+      const lad = document.querySelector('.ladder');
+      if (lad) {
+        const row = lad.querySelector('.row'); const cs = getComputedStyle(lad);
+        const availW = lad.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), availH = lad.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+        let lh = availH; lad.style.setProperty('--lh', lh + 'px');
+        for (let n = 0; n < 400 && (row.scrollWidth > availW + 0.5 || row.offsetHeight > availH + 0.5); n++) { lh *= 0.99; lad.style.setProperty('--lh', lh + 'px'); }
+      }
+      let worst = 0;
+      for (const im of document.images) {
+        const fit = getComputedStyle(im).objectFit;
+        if (fit === 'contain' || fit === 'cover') continue; // these never stretch the picture
+        const r = im.getBoundingClientRect(); if (!r.width || !im.naturalWidth) continue;
+        worst = Math.max(worst, Math.abs((r.width / r.height) / (im.naturalWidth / im.naturalHeight) - 1));
+      }
+      return worst;
+    });
+    if (aspect > 0.01) { console.log(name, 'ASPECT-DISTORTED', aspect.toFixed(3)); process.exitCode = 1; }
     // auto-fit: shrink the type unit until every copy block fits its panel
     const fit = await page.evaluate(() => {
       const ad = document.querySelector('.ad'); let u = parseFloat(ad.style.getPropertyValue('--u')); const u0 = u;

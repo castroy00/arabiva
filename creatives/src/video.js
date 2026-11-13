@@ -33,10 +33,11 @@ html,body{width:${W}px;height:${H}px;background:#14110f;overflow:hidden;font-fam
 .photo img.full{position:absolute;inset:0;width:100%;height:100%;transform-origin:50% 55%}
 .photo.white img.full{object-fit:contain;padding:${u * 7}px}
 .photo.pic img.full{object-fit:cover}
-.ladder{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:${u * 1.2}px;padding:${u * 8}px ${u * 4}px ${u * 9}px;direction:rtl;transform-origin:50% 60%}
-.ladder figure{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;flex:1 1 0;min-width:0}
-.ladder img{display:block;width:auto;max-width:100%}
-.ladder figcaption{margin-top:${u * 1.4}px;font-weight:500;font-size:${u * 3}px;color:#14110f;direction:rtl}
+.ladder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:${u * 6}px ${u * 4}px}
+.ladder .row{display:flex;align-items:flex-end;justify-content:center;gap:${u * 0.5}px;direction:rtl;transform-origin:50% 60%}
+.ladder figure{display:flex;flex-direction:column;align-items:center;flex:0 0 auto;margin:0}
+.ladder img{display:block;height:calc(var(--lh)*var(--k));width:auto;max-width:none;flex:0 0 auto}
+.ladder figcaption{margin-top:${u * 1.4}px;font-weight:500;font-size:${u * 3}px;color:#14110f;direction:rtl;white-space:nowrap}
 .copy{position:absolute;${copyBox};display:flex;flex-direction:column;justify-content:center;gap:${u * 3}px;padding:${u * 7}px ${u * 8}px;direction:rtl;text-align:right;border-${mode === 'v' ? 'top' : 'left'}:${u * 0.5}px solid #b87333}
 .brand{height:${u * 8.6}px;align-self:flex-start}
 .eyebrow{font-weight:500;font-size:${u * 3.6}px;color:#d9985f}
@@ -55,7 +56,7 @@ function sceneHTML(s, i) {
   if (s.type === 'logo') return `<div class="scene" id="s${i}"><div class="center"><img class="big" data-in="0" src="${F('img/wordmark-gold.webp')}"><div class="rule" data-in="1"></div><div class="line" data-in="2">${s.line}</div></div></div>`;
   if (s.type === 'end') return `<div class="scene" id="s${i}"><div class="center"><img class="big" data-in="0" src="${F('img/wordmark-gold.webp')}"><h1 data-in="1">${s.h}</h1><div class="url" data-in="2">arabiva.com</div><div class="line" data-in="3">${s.line}</div></div></div>`;
   let photo;
-  if (s.kind === 'ladder') photo = `<div class="photo white" style="background:${s.bg}"><div class="ladder zoom">${ladder.map(([src, k, cap]) => `<figure><img src="${F(src)}" style="height:${(k * 84).toFixed(1)}%"><figcaption>${cap}</figcaption></figure>`).join('')}</div></div>`;
+  if (s.kind === 'ladder') photo = `<div class="photo white" style="background:${s.bg}"><div class="ladder"><div class="row zoom">${ladder.map(([src, k, cap]) => `<figure><img src="${F(src)}" style="--k:${k}"><figcaption>${cap}</figcaption></figure>`).join('')}</div></div></div>`;
   else if (s.kind === 'white') photo = `<div class="photo white" style="background:${s.bg}"><img class="full zoom" src="${F(s.img)}"></div>`;
   else photo = `<div class="photo pic"><img class="full zoom" src="${F(s.img)}" style="object-position:${s.pos || '50% 50%'}"></div>`;
   return `<div class="scene" id="s${i}">${photo}<div class="copy"><img class="brand" src="${F('img/wordmark-gold.webp')}"><div class="eyebrow" data-in="0">${s.eyebrow}</div><h1 data-in="1">${s.h}</h1><div class="sub" data-in="2">${s.sub}</div></div></div>`;
@@ -71,6 +72,24 @@ function sceneHTML(s, i) {
   await page.goto('file://' + tmp);
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(() => Promise.all([...document.images].map((im) => im.decode().catch(() => {}))));
+  // size ladder: one shared scale; then prove no photo is stretched in any scene
+  const aspect = await page.evaluate(() => {
+    document.querySelectorAll('.scene').forEach((el) => { el.style.opacity = 1; });
+    document.querySelectorAll('.ladder').forEach((lad) => {
+      const row = lad.querySelector('.row'); const cs = getComputedStyle(lad);
+      const availW = lad.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), availH = lad.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      let lh = availH * 0.94; lad.style.setProperty('--lh', lh + 'px'); // leaves room for the 5% zoom
+      for (let n = 0; n < 400 && (row.scrollWidth > availW * 0.95 || row.offsetHeight > availH * 0.95); n++) { lh *= 0.99; lad.style.setProperty('--lh', lh + 'px'); }
+    });
+    let worst = 0;
+    for (const im of document.images) {
+      const fit = getComputedStyle(im).objectFit; if (fit === 'contain' || fit === 'cover') continue;
+      const r = im.getBoundingClientRect(); if (!r.width || !im.naturalWidth) continue;
+      worst = Math.max(worst, Math.abs((r.width / r.height) / (im.naturalWidth / im.naturalHeight) - 1));
+    }
+    return worst;
+  });
+  if (aspect > 0.01) { console.log('ASPECT-DISTORTED', aspect.toFixed(3)); process.exit(1); }
   const starts = []; let acc = 0; for (const s of SCENES) { starts.push(acc); acc += s.dur; }
   const N = Math.round(TOTAL * FPS);
   for (let f = 0; f < N; f++) {
