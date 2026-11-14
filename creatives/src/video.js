@@ -11,12 +11,12 @@ const W = mode === 'v' ? 1080 : 1920, H = mode === 'v' ? 1920 : 1080, FPS = 30;
 
 const ladder = [['img/c-50g.webp', 0.50, '50 غ'], ['img/c-100g.webp', 0.60, '100 غ'], ['img/c-250g.webp', 0.72, '250 غ'], ['img/c-500g.webp', 0.86, '500 غ'], ['img/c-1kg.webp', 1.0, '1 كغ']];
 const SCENES = [
-  { type: 'logo', dur: 1.8, line: 'عطور وزيوت عطرية من الكويت' },
-  { type: 'shot', dur: 2.8, kind: 'white', bg: '#fefcfb', img: 'img/tola.webp', eyebrow: 'تولة أرابيفا', h: 'جرّب عطرك<br>من <b>1 د.ك</b>', sub: 'أكثر من 2,000 عطر مستوحى، مسك وعود' },
-  { type: 'shot', dur: 2.8, kind: 'scene', img: 'img/arch.webp', eyebrow: 'بخاخ العطر', h: 'بخاخ 50 مل<br>من <b>6 د.ك</b>', sub: 'وعيّنة 2 مل من 1 د.ك' },
-  { type: 'shot', dur: 2.8, kind: 'scene', img: mode === 'v' ? 'img/travel-mobile.webp' : 'img/travel-mobile.webp', pos: '50% 60%', eyebrow: 'بخاخ السفر', h: 'عطرك معك<br>10 مل من <b>2.5 د.ك</b>', sub: 'لفّة واحدة ويظهر البخاخ' },
-  { type: 'shot', dur: 2.8, kind: 'ladder', bg: '#fefefe', eyebrow: 'زيوت عطرية مركّزة', h: '50 غرام<br>من <b>2 د.ك</b>', sub: 'أحجام من 50 غرام إلى 1 كيلو' },
-  { type: 'end', dur: 2.0, h: 'اطلب الآن', line: 'توصيل للكويت والخليج' },
+  { type: 'logo', dur: 1.5, line: 'عطور وزيوت عطرية من الكويت' },
+  { type: 'shot', dur: 2.9, kind: 'white', bg: '#fefcfb', img: 'img/tola.webp', eyebrow: 'تولة أرابيفا', h: 'جرّب عطرك<br>من <b>1 د.ك</b>', sub: 'أكثر من 2,000 عطر مستوحى، مسك وعود' },
+  { type: 'shot', dur: 2.9, kind: 'scene', img: 'img/arch.webp', eyebrow: 'بخاخ العطر', h: 'بخاخ 50 مل<br>من <b>6 د.ك</b>', sub: 'والحجم الكبير 200 مل من 12 د.ك' },
+  { type: 'shot', dur: 2.9, kind: 'scene', img: mode === 'v' ? 'img/travel-mobile.webp' : 'img/travel-mobile.webp', pos: '50% 60%', eyebrow: 'بخاخ السفر', h: 'عطرك معك<br>10 مل من <b>2.5 د.ك</b>', sub: 'لفّة واحدة ويظهر البخاخ' },
+  { type: 'shot', dur: 2.9, kind: 'ladder', bg: '#fefefe', eyebrow: 'زيوت عطرية مركّزة', h: '50 غرام<br>من <b>2 د.ك</b>', sub: 'أحجام من 50 غرام إلى 1 كيلو' },
+  { type: 'end', dur: 1.9, h: 'اطلب الآن', line: 'توصيل للكويت والخليج' },
 ];
 const TOTAL = SCENES.reduce((a, s) => a + s.dur, 0);
 
@@ -28,7 +28,7 @@ const copyBox = mode === 'v' ? `left:0;right:0;top:${Math.round(H * 0.58)}px;bot
 const css = `${[300, 500, 800].map(fontFace).join('\n')}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:${W}px;height:${H}px;background:#14110f;overflow:hidden;font-family:Alexandria,sans-serif;color:#faf4ec}
-.scene{position:absolute;inset:0;opacity:0}
+.scene{position:absolute;inset:0;opacity:0;background:#14110f}
 .photo{position:absolute;${photoBox};overflow:hidden}
 .photo img.full{position:absolute;inset:0;width:100%;height:100%;transform-origin:50% 55%}
 .photo.white img.full{object-fit:contain;padding:${u * 7}px}
@@ -94,20 +94,26 @@ function sceneHTML(s, i) {
   const N = Math.round(TOTAL * FPS);
   for (let f = 0; f < N; f++) {
     const t = f / FPS;
-    await page.evaluate(({ t, starts, durs }) => {
+    const bad = await page.evaluate(({ t, starts, durs }) => {
       const ease = (x) => { x = Math.max(0, Math.min(1, x)); return 1 - Math.pow(1 - x, 3); };
-      const XF = 0.35;
+      // Every scene is opaque. A scene's text leaves before the next scene starts to cover it,
+      // so a photo is never on screen with another scene's words.
+      const XF = 0.35, OUT = 0.25; let bad = null;
+      const ops = starts.map((st, i) => { const lt = t - st, d = durs[i]; if (lt >= d || lt < -XF) return 0; return i === 0 ? 1 : ease((lt + XF) / XF); });
       starts.forEach((st, i) => {
-        const el = document.getElementById('s' + i); const lt = t - st, d = durs[i];
-        let op = 0;
-        if (lt >= -XF && lt < d) op = i === 0 ? 1 : ease((lt + XF) / XF); // fade in over the previous scene's tail
-        if (lt >= d) op = 0;
+        const el = document.getElementById('s' + i); const lt = t - st, d = durs[i]; const op = ops[i];
         el.style.opacity = op; el.style.zIndex = i;
         if (op === 0) return;
+        const last = i === starts.length - 1;
+        const leave = last ? 1 : 1 - ease((lt - (d - XF - OUT)) / OUT);
         const z = el.querySelector('.zoom'); if (z) z.style.transform = `scale(${1 + 0.05 * Math.max(0, Math.min(1, (lt + XF) / (d + XF)))})`;
-        el.querySelectorAll('[data-in]').forEach((k) => { const n = +k.dataset.in; const p = ease((lt - 0.12 - n * 0.16) / 0.5); k.style.opacity = p; k.style.transform = `translateY(${(1 - p) * 26}px)`; });
+        let text = 0;
+        el.querySelectorAll('[data-in]').forEach((k) => { const n = +k.dataset.in; const p = ease((lt - 0.04 - n * 0.1) / 0.38); const o = p * leave; text = Math.max(text, o); k.style.opacity = o; k.style.transform = `translateY(${(1 - p) * 26}px)`; });
+        if (!last && ops[i + 1] > 0 && text > 0.001) bad = `scene ${i} text ${text.toFixed(3)} under scene ${i + 1} at ${ops[i + 1].toFixed(3)}`;
       });
+      return bad;
     }, { t, starts, durs: SCENES.map((s) => s.dur) });
+    if (bad) { console.log('OUT-OF-SYNC', 'frame', f, bad); process.exit(1); }
     await page.screenshot({ path: path.join(frames, String(f).padStart(4, '0') + '.jpg'), type: 'jpeg', quality: 95 });
   }
   await browser.close(); fs.unlinkSync(tmp);
