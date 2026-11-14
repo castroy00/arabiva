@@ -24,4 +24,4 @@ npm run images
 npm run video
 ```
 
-Output goes to `creatives/src/out/`. The video step needs `ffmpeg`. Text that does not fit its panel is scaled down automatically, and the script prints `OVERFLOW` if it still does not fit.
+Output goes to `creatives/src/out/`. The video step needs `ffmpeg`. Text that does not fit its panel is scaled down automatically, and the script prints `OVERFLOW` if it still does not fit. The build also stops with `ASPECT-DISTORTED` if a product photo would be stretched, and the video build stops with `OUT-OF-SYNC` if any frame would show one scene's text over another scene's photo.
